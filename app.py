@@ -4,7 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder="Templates")
 app.secret_key = os.environ.get('SHOPNEXA_SECRET', 'change-this-secret')
 DB = os.path.join(os.path.dirname(__file__), 'shopnexa.db')
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'static', 'uploads')
