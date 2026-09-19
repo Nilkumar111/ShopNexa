@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+
+{% block title %}My Orders — ShopNexa{% endblock %}
+
+{% block content %}
+
+<div class="wrap">
+
+    <div class="panel">
+
+        <div class="section-head">
+            <h1>My Orders</h1>
+
+            <a class="btn orange" href="/">
+                Continue Shopping
+            </a>
+        </div>
+
+
+        {% for o in orders %}
+
+        <div class="order-row">
+
+            <div>
+                <b>#SN{{o.id}}</b>
+                <small>{{o.created_at}}</small>
+            </div>
+
+            <strong>
+                ₹{{'%.0f'|format(o.total)}}
+            </strong>
+
+            <span class="status {{o.status|lower}}">
+                {{o.status}}
+            </span>
+
+
+            <!-- VIEW ORDER -->
+
+            <a class="btn light" href="/order/{{o.id}}">
+                View Order
+            </a>
+
+
+            <!-- INVOICE -->
+
+            <a class="btn light" href="/order/{{o.id}}/invoice">
+                📄 Invoice
+            </a>
+
+
+            <!-- TRACKING -->
+
+            {% if o.status in ['Shipped', 'Delivered'] %}
+
+            <a class="btn light" href="/order/{{o.id}}/track">
+                🚚 Track Order
+            </a>
+
+            {% endif %}
+{% if o.status in ['Pending', 'Processing'] %}
+
+<a class="btn light"
+   href="/order/{{o.id}}/cancel"
+   onclick="return confirm('Are you sure you want to cancel this order?');">
+    ❌ Cancel Order
+</a>
+
+{% endif %}
+
+{% if o.status == 'Delivered' %}
+
+<a class="btn light"
+   href="/order/{{o.id}}/return"
+   onclick="return confirm('Are you sure you want to request a return for this order?');">
+    ↩️ Return Order
+</a>
+
+{% endif %}
+
+        </div>
+
+        {% else %}
+
+        <div class="empty">
+            <p>No orders yet.</p>
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+</div>
+
+{% endblock %}

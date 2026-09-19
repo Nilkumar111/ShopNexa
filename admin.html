@@ -1,0 +1,69 @@
+{% extends 'base.html' %}{% block title %}Admin Dashboard — ShopNexa{% endblock %}{% block content %}<div class="wrap"><div class="stats"><div><small>Revenue</small><b>₹{{'%.0f'|format(revenue)}}</b></div><div><small>Margin</small><b>₹{{'%.0f'|format(margin)}}</b></div><div><small>Pending Products</small><b>{{pending|length}}</b></div><div><small>Suppliers</small><b>{{suppliers|length}}</b></div></div><div class="panel"><h2>👑 Admin Dashboard</h2><p class="muted">Approve suppliers/products, manage orders and forward customer orders to suppliers.</p></div><div class="panel"><h2>Supplier Approvals</h2><div class="table-wrap"><table><tr><th>Supplier</th><th>Email</th><th>Status</th><th>Action</th></tr>{% for s in suppliers %}<tr><td>{{s.name}}</td><td>{{s.email}}</td><td>{{'Approved' if s.approved else 'Pending'}}</td><td>{% if not s.approved %}<a href="/admin/supplier/{{s.id}}/approve">Approve</a>{% endif %}</td></tr>{% else %}<tr><td colspan="4">No suppliers.</td></tr>{% endfor %}</table></div></div><div class="panel"><h2>Product Approvals</h2><div class="table-wrap"><table><tr><th>Product</th><th>Supplier</th><th>Price</th><th>Stock</th><th>Action</th></tr>{% for p in pending %}<tr><td>{{p.name}}</td><td>{{p.supplier}}</td><td>₹{{p.selling_price}}</td><td>{{p.stock}}</td><td><a href="/admin/product/{{p.id}}/approve">Approve</a> · <a href="/admin/product/{{p.id}}/reject">Keep Pending</a></td></tr>{% else %}<tr><td colspan="5">No pending products.</td></tr>{% endfor %}</table></div></div><div class="panel"><h2>Orders</h2><div class="table-wrap"><table><tr><th>Order</th><th>Customer</th><th>Total</th><th>Margin</th><th>Status</th><th>Supplier</th><th>Actions</th></tr>{% for o in orders %}<tr><td><a href="/order/{{o.id}}">#SN{{o.id}}</a></td><td>{{o.customer}}</td><td>₹{{o.total}}</td><td>₹{{o.margin}}</td><td>{{o.status}}</td><td>{% if o.forwarded %}<b>Forwarded ✓</b>{% elif o.status!='Cancelled' %}<a href="/admin/order/{{o.id}}/forward">Forward</a>{% else %}—{% endif %}</td><td><a href="/admin/order/{{o.id}}/Processing">Processing</a> · <a href="/admin/order/{{o.id}}/Shipped">Shipped</a> · <a href="/admin/order/{{o.id}}/Delivered">Delivered</a></td></tr>{% else %}<tr><td colspan="7">No orders.</td></tr>{% endfor %}</table></div></div><div class="panel">
+
+    <h2>🔄 Return Requests</h2>
+
+    <div class="table-wrap">
+
+        <table>
+
+            <tr>
+                <th>Order</th>
+                <th>Customer</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+
+            {% for r in return_requests %}
+
+            <tr>
+
+                <td>
+                    <a href="/order/{{r.id}}">
+                        #SN{{r.id}}
+                    </a>
+                </td>
+
+                <td>
+                    {{r.customer}}
+                </td>
+
+                <td>
+                    ₹{{r.total}}
+                </td>
+
+                <td>
+                    {{r.status}}
+                </td>
+
+                <td>
+
+                    <a href="/admin/return/{{r.id}}/approve">
+                        ✅ Approve
+                    </a>
+
+                    ·
+
+                    <a href="/admin/return/{{r.id}}/reject">
+                        ❌ Reject
+                    </a>
+
+                </td>
+
+            </tr>
+
+            {% else %}
+
+            <tr>
+                <td colspan="5">
+                    No return requests.
+                </td>
+            </tr>
+
+            {% endfor %}
+
+        </table>
+
+    </div>
+
+</div><div class="panel"><h2>Create Coupon</h2><form class="inline-form" method="post" action="/admin/coupon"><input name="code" placeholder="WELCOME20" required><input type="number" min="0" max="100" step="0.1" name="discount_percent" placeholder="Discount %" required><button class="btn orange">Create Coupon</button></form><p class="muted">Demo coupon already available: <b>WELCOME10</b></p></div></div>{% endblock %}
