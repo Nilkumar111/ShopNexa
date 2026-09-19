@@ -1,0 +1,489 @@
+{% extends 'base.html' %}
+
+{% block title %}Order #SN{{order.id}} — ShopNexa{% endblock %}
+
+{% block content %}
+
+<style>
+.order-page{
+    max-width:1100px;
+    margin:25px auto;
+}
+
+.order-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:20px;
+}
+
+.order-top h1{
+    margin:0;
+    font-size:28px;
+}
+
+.back-btn{
+    text-decoration:none;
+    padding:10px 16px;
+    border-radius:8px;
+    background:#f1f4f8;
+    color:#0b1733;
+    font-weight:600;
+}
+
+.order-grid{
+    display:grid;
+    grid-template-columns:2fr 1fr;
+    gap:20px;
+}
+
+.box{
+    background:white;
+    border-radius:14px;
+    padding:22px;
+    margin-bottom:20px;
+    box-shadow:0 4px 15px rgba(0,0,0,.07);
+}
+
+.box h2{
+    margin-top:0;
+    font-size:20px;
+}
+
+.status-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:18px;
+}
+
+.status{
+    padding:7px 14px;
+    border-radius:20px;
+    background:#e7f7ee;
+    color:#087a42;
+    font-weight:700;
+    font-size:13px;
+}
+
+.info-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:18px;
+}
+
+.info label{
+    display:block;
+    font-size:12px;
+    color:#777;
+    margin-bottom:5px;
+}
+
+.info b{
+    font-size:14px;
+}
+
+.product{
+    display:flex;
+    gap:15px;
+    padding:15px 0;
+    border-bottom:1px solid #e5e8ed;
+}
+
+.product:last-child{
+    border-bottom:0;
+}
+
+.product-img{
+    width:90px;
+    height:90px;
+    border-radius:10px;
+    background:#f1f4f8;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+}
+
+.product-img img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+
+.product-info{
+    flex:1;
+}
+
+.product-info h3{
+    margin:3px 0 8px;
+    font-size:16px;
+}
+
+.product-info p{
+    margin:4px 0;
+    color:#666;
+    font-size:13px;
+}
+
+.price{
+    font-weight:700;
+    font-size:16px;
+}
+
+.address{
+    background:#f7f8fa;
+    border-radius:10px;
+    padding:15px;
+    line-height:1.6;
+    font-size:14px;
+}
+
+.summary-row{
+    display:flex;
+    justify-content:space-between;
+    padding:9px 0;
+    font-size:14px;
+}
+
+.total{
+    border-top:1px solid #ddd;
+    margin-top:8px;
+    padding-top:14px;
+    font-size:19px;
+    font-weight:800;
+}
+
+.timeline{
+    position:relative;
+    margin-top:10px;
+}
+
+.timeline-item{
+    display:flex;
+    gap:15px;
+    position:relative;
+    padding-bottom:20px;
+}
+
+.timeline-dot{
+    width:12px;
+    height:12px;
+    border-radius:50%;
+    background:#ff7417;
+    margin-top:5px;
+    flex-shrink:0;
+}
+
+.timeline-item:not(:last-child) .timeline-dot:after{
+    content:"";
+    position:absolute;
+    left:5px;
+    top:17px;
+    width:2px;
+    height:35px;
+    background:#ddd;
+}
+
+.timeline-item b{
+    font-size:14px;
+}
+
+.timeline-item small{
+    display:block;
+    color:#777;
+    margin-top:3px;
+}
+
+.cancel-btn{
+    display:inline-block;
+    margin-top:10px;
+    padding:10px 16px;
+    border-radius:8px;
+    background:#fff0f0;
+    color:#c62828;
+    text-decoration:none;
+    font-weight:700;
+}
+
+@media(max-width:750px){
+    .order-grid{
+        grid-template-columns:1fr;
+    }
+
+    .info-grid{
+        grid-template-columns:1fr;
+    }
+
+    .order-top{
+        flex-direction:column;
+        align-items:flex-start;
+        gap:12px;
+    }
+}
+</style>
+
+<div class="order-page">
+
+    <!-- HEADER -->
+    <div class="order-top">
+
+        <div>
+            <h1>Order #SN{{order.id}}</h1>
+
+            <p style="margin:6px 0;color:#777;font-size:13px;">
+                Placed on {{order.created_at}}
+            </p>
+        </div>
+
+        <a class="back-btn" href="/my-orders">
+            ← Back to My Orders
+        </a>
+
+<a class="back-btn" href="/order/{{order.id}}/invoice">
+    🧾 View Invoice
+</a>
+    </div>
+
+
+    <div class="order-grid">
+
+        <!-- LEFT SIDE -->
+        <div>
+
+            <!-- ORDER STATUS -->
+            <div class="box">
+
+                <div class="status-row">
+
+                    <h2>Order Status</h2>
+
+                    <span class="status">
+                        {{order.status}}
+                    </span>
+
+                </div>
+
+                <div class="timeline">
+
+                    {% if history %}
+
+                        {% for h in history %}
+
+                        <div class="timeline-item">
+
+                            <div class="timeline-dot"></div>
+
+                            <div>
+                                <b>{{h.status}}</b>
+
+                                <small>
+                                    {{h.created_at}}
+                                </small>
+
+                                {% if h.note %}
+                                <small>
+                                    {{h.note}}
+                                </small>
+                                {% endif %}
+                            </div>
+
+                        </div>
+
+                        {% endfor %}
+
+                    {% else %}
+
+                        <div class="timeline-item">
+
+                            <div class="timeline-dot"></div>
+
+                            <div>
+                                <b>{{order.status}}</b>
+
+                                <small>
+                                    {{order.created_at}}
+                                </small>
+                            </div>
+
+                        </div>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+
+            <!-- PRODUCT DETAILS -->
+            <div class="box">
+
+                <h2>Products</h2>
+
+                {% for item in items %}
+
+                <div class="product">
+
+                    <div class="product-img">
+
+                        {% if item.image_url %}
+
+                        <img src="{{item.image_url}}" alt="{{item.product_name}}">
+
+                        {% else %}
+
+                        📦
+
+                        {% endif %}
+
+                    </div>
+
+                    <div class="product-info">
+
+                        <h3>{{item.product_name}}</h3>
+
+                        <p>
+                            Quantity: <b>{{item.qty}}</b>
+                        </p>
+
+                        <p>
+                            Price: ₹{{'%.0f'|format(item.price)}} each
+                        </p>
+
+                        <div class="price">
+                            ₹{{'%.0f'|format(item.price * item.qty)}}
+                        </div>
+
+                    </div>
+
+                </div>
+
+                {% endfor %}
+
+            </div>
+
+
+            <!-- DELIVERY ADDRESS -->
+            <div class="box">
+
+                <h2>Delivery Address</h2>
+
+                <div class="address">
+                    {{order.address}}
+                </div>
+
+            </div>
+
+
+            <!-- PAYMENT INFORMATION -->
+            <div class="box">
+
+                <h2>Payment Information</h2>
+
+                <div class="info-grid">
+
+                    <div class="info">
+                        <label>Payment Method</label>
+
+                        <b>
+                            {% if order.payment_method == 'COD' %}
+                                Cash on Delivery
+                            {% else %}
+                                Online Payment (Demo)
+                            {% endif %}
+                        </b>
+                    </div>
+
+                    <div class="info">
+                        <label>Payment Status</label>
+
+                        <b>
+                            {{order.payment_status}}
+                        </b>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- RIGHT SIDE -->
+        <div>
+
+            <!-- ORDER SUMMARY -->
+            <div class="box">
+
+                <h2>Order Summary</h2>
+
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <b>₹{{'%.0f'|format(order.total)}}</b>
+                </div>
+
+                <div class="summary-row">
+                    <span>Delivery</span>
+                    <b>FREE</b>
+                </div>
+
+                <div class="summary-row total">
+                    <span>Total</span>
+                    <span>₹{{'%.0f'|format(order.total)}}</span>
+                </div>
+
+            </div>
+
+
+            <!-- ORDER INFORMATION -->
+            <div class="box">
+
+                <h2>Order Information</h2>
+
+                <div class="info-grid">
+
+                    <div class="info">
+                        <label>Order ID</label>
+                        <b>#SN{{order.id}}</b>
+                    </div>
+
+                    <div class="info">
+                        <label>Order Date</label>
+                        <b>{{order.created_at}}</b>
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- CANCEL ORDER -->
+            {% if logged_in and role == 'customer' and order.status in ['Pending','Processing'] %}
+
+            <div class="box">
+
+                <h2>Need Help?</h2>
+
+                <p style="font-size:13px;color:#666;">
+                    You can cancel this order while it is still being processed.
+                </p>
+
+                <a
+                    class="cancel-btn"
+                    href="/cancel_order/{{order.id}}"
+                    onclick="return confirm('Are you sure you want to cancel this order?');"
+                >
+                    Cancel Order
+                </a>
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

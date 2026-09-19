@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block title %}Track Order #SN{{order.id}} — ShopNexa{% endblock %}
+
+{% block content %}
+
+<div class="wrap">
+
+    <div class="panel">
+
+        <div class="section-head">
+            <h1>🚚 Track Your Order</h1>
+
+            <a class="btn light" href="/my-orders">
+                ← My Orders
+            </a>
+        </div>
+
+        <h2>Order #SN{{order.id}}</h2>
+
+        <p class="muted">
+            Order Date: {{order.created_at}}
+        </p>
+
+        <hr>
+
+        <h2>Order Status</h2>
+
+        <div style="margin-top:20px;">
+
+            {% for h in history %}
+
+            <div style="
+                border-left:3px solid #ff6b00;
+                padding:10px 0 10px 18px;
+                margin-left:8px;
+            ">
+
+                <b>{{h.status}}</b>
+
+                <br>
+
+                <small>
+                    {{h.created_at}}
+                </small>
+
+                {% if h.note %}
+                <br>
+
+                <small class="muted">
+                    {{h.note}}
+                </small>
+                {% endif %}
+
+            </div>
+
+            {% else %}
+
+            <p>No tracking information available.</p>
+
+            {% endfor %}
+
+        </div>
+
+        <hr>
+
+        {% if order.shipping_partner %}
+
+        <h2>📦 Shipping & Tracking</h2>
+
+        <p>
+            <b>Shipping Partner:</b>
+            {{order.shipping_partner}}
+        </p>
+
+        <p>
+            <b>Tracking Number:</b>
+            {{order.tracking_number}}
+        </p>
+
+        {% endif %}
+
+        <div style="margin-top:25px;">
+
+            <a class="btn orange" href="/order/{{order.id}}">
+                View Order
+            </a>
+
+            <a class="btn light" href="/order/{{order.id}}/invoice">
+                📄 View Invoice
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

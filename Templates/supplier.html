@@ -1,0 +1,114 @@
+{% extends 'base.html' %}{% block title %}Supplier Dashboard — ShopNexa{% endblock %}{% block content %}<div class="wrap"><div class="stats"><div><small>My Products</small><b>{{products|length}}</b></div><div><small><div class="panel">
+
+    <h2>📦 Forwarded Orders</h2>
+
+    <div class="table-wrap">
+        <table>
+
+            <tr>
+                <th>Order</th>
+                <th>Product</th>
+                <th>Qty</th>
+                <th>Customer</th>
+                <th>Address</th>
+                <th>Status</th>
+                <th>Update</th>
+            </tr>
+
+            {% for i in items %}
+
+            <tr>
+
+                <td>#SN{{i.order_id}}</td>
+
+                <td>{{i.product_name}}</td>
+
+                <td>{{i.qty}}</td>
+
+                <td>{{i.customer_name}}</td>
+
+                <td>{{i.address}}</td>
+
+                <td>
+                    {{i.status}}
+
+                    {% if i.tracking_number %}
+                        <br>
+                        <small>
+                            🚚 {{i.shipping_partner}}
+                            <br>
+                            🔢 {{i.tracking_number}}
+                        </small>
+                    {% endif %}
+                </td>
+
+                <td>
+
+                    {% if i.status == 'Processing' %}
+
+                    <form
+                        method="post"
+                        action="/supplier/order/{{i.order_id}}/Shipped"
+                        style="display:flex;flex-direction:column;gap:6px;min-width:180px;">
+
+                        <input
+                            type="text"
+                            name="shipping_partner"
+                            placeholder="Shipping Partner"
+                            required>
+
+                        <input
+                            type="text"
+                            name="tracking_number"
+                            placeholder="Tracking Number"
+                            required>
+
+                        <button
+                            type="submit"
+                            class="btn orange">
+                            🚚 Mark Shipped
+                        </button>
+
+                    </form>
+
+                    {% elif i.status == 'Shipped' %}
+
+                    <a href="/supplier/order/{{i.order_id}}/Delivered">
+                        ✅ Mark Delivered
+                    </a>
+
+                    {% elif i.status == 'Delivered' %}
+
+                    <b>✅ Completed</b>
+
+                    {% elif i.status == 'Cancelled' %}
+
+                    <b>❌ Cancelled</b>
+
+                    {% else %}
+
+                    <a href="/supplier/order/{{i.order_id}}/Processing">
+                        Processing
+                    </a>
+
+                    {% endif %}
+
+                </td>
+
+            </tr>
+
+            {% else %}
+
+            <tr>
+                <td colspan="7">
+                    No forwarded orders yet.
+                </td>
+            </tr>
+
+            {% endfor %}
+
+        </table>
+    </div>
+
+</div>
+</div></div></div><div class="panel"><h2>My Products</h2><div class="table-wrap"><table><tr><th>Product</th><th>Supplier</th><th>Selling</th><th>Stock</th><th>Approval</th><th>Actions</th></tr>{% for p in products %}<tr><td>{{p.name}}</td><td>₹{{p.supplier_price}}</td><td>₹{{p.selling_price}}</td><td>{{p.stock}}</td><td><span class="status {% if p.approved %}delivered{% else %}pending{% endif %}">{{'Approved' if p.approved else 'Pending'}}</span></td><td><a href="/supplier/product/{{p.id}}/edit">Edit</a> · <a href="/supplier/product/{{p.id}}/archive">Archive</a></td></tr>{% else %}<tr><td colspan="5">No products yet.</td></tr>{% endfor %}</table></div></div></div>{% endblock %}
