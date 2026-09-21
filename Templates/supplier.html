@@ -111,4 +111,68 @@
     </div>
 
 </div>
-</div></div></div><div class="panel"><h2>My Products</h2><div class="table-wrap"><table><tr><th>Product</th><th>Supplier</th><th>Selling</th><th>Stock</th><th>Approval</th><th>Actions</th></tr>{% for p in products %}<tr><td>{{p.name}}</td><td>₹{{p.supplier_price}}</td><td>₹{{p.selling_price}}</td><td>{{p.stock}}</td><td><span class="status {% if p.approved %}delivered{% else %}pending{% endif %}">{{'Approved' if p.approved else 'Pending'}}</span></td><td><a href="/supplier/product/{{p.id}}/edit">Edit</a> · <a href="/supplier/product/{{p.id}}/archive">Archive</a></td></tr>{% else %}<tr><td colspan="5">No products yet.</td></tr>{% endfor %}</table></div></div></div>{% endblock %}
+</div></div></div><div class="panel"><h2>My Products</h2><div class="table-wrap"><table><tr><th>Product</th><th>Supplier</th><th>Selling</th><th>Stock</th><th>Approval</th><th>Actions</th></tr>{% for p in products %}<tr><td>{{p.name}}</td><td>₹{{p.supplier_price}}</td><td>₹{{p.selling_price}}</td><td>{{p.stock}}</td><td><span class="status {% if p.approved %}delivered{% else %}pending{% endif %}">{{'Approved' if p.approved else 'Pending'}}</span></td><td><a href="/supplier/product/{{p.id}}/edit">Edit</a> · <a href="/supplier/product/{{p.id}}/archive">Archive</a></td></tr>{% else %}<tr><td colspan="5">No products yet.</td></tr>{% endfor %}</table></div></div></div>
+<div class="panel">
+    <h2>➕ Add New Product</h2>
+
+    <form method="post" action="/supplier/product" enctype="multipart/form-data">
+
+        <div class="form-grid">
+
+            <input
+                type="text"
+                name="name"
+                placeholder="Product Name"
+                required>
+
+            <input
+                type="text"
+                name="category"
+                placeholder="Category"
+                required>
+
+            <textarea
+                name="description"
+                placeholder="Product Description"
+                rows="4"></textarea>
+
+            <input
+                type="number"
+                step="0.01"
+                name="supplier_price"
+                placeholder="Supplier Price"
+                required>
+
+            <input
+                type="number"
+                step="0.01"
+                name="selling_price"
+                placeholder="Selling Price"
+                required>
+
+            <input
+                type="number"
+                name="stock"
+                placeholder="Stock Quantity"
+                min="0"
+                required>
+
+            <input
+                type="url"
+                name="image_url"
+                placeholder="Product Image URL">
+
+            <input
+                type="file"
+                name="image_file"
+                accept="image/*">
+
+        </div>
+
+        <button type="submit" class="btn orange">
+            ➕ Add Product
+        </button>
+
+    </form>
+</div>
+{% endblock %}
