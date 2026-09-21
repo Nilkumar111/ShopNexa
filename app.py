@@ -207,7 +207,7 @@ def register():
 @app.route('/login',methods=['GET','POST'])
 def login():
     if request.method=='POST':
-        f=request.form; c=db(); u=c.execute('SELECT * FROM users WHERE email=?',(f['email'].strip().lower(),)).fetchone(); c.close()
+        f=request.form; c=db(); u=c.execute("SELECT * FROM users WHERE LOWER(email)=LOWER(?)",(f['email'].strip(),)).fetchone()
         if u and check_password_hash(u['password'],f['password']):
             if u['role']=='supplier' and not u['approved']:
                 flash('Supplier account is awaiting admin approval.','err'); return redirect('/login')
