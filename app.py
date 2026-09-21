@@ -5,8 +5,8 @@ from werkzeug.utils import secure_filename
 from datetime import datetime
 
 app = Flask(__name__, template_folder="Templates")
-app.secret_key = os.environ.get('SHOPNEXA_SECRET', 'change-this-secret')
-DB = os.path.join(os.path.dirname(__file__), 'shopnexa.db')
+app.secret_key = os.environ.get('ShoppingBazarHub_SECRET', 'change-this-secret')
+DB = os.path.join(os.path.dirname(__file__), 'ShoppingBazarHub.db')
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'static', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -113,9 +113,9 @@ def init_db():
     add_column(c,'orders','payment_method',"TEXT DEFAULT 'COD'")
     add_column(c,'orders','payment_status',"TEXT DEFAULT 'Pending'")
     c.execute("CREATE TABLE IF NOT EXISTS order_status_history(id INTEGER PRIMARY KEY AUTOINCREMENT, order_id INTEGER NOT NULL, status TEXT NOT NULL, note TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)")
-    admin=c.execute("SELECT id FROM users WHERE email='admin@shopnexa.in'").fetchone()
+    admin=c.execute("SELECT id FROM users WHERE email='admin@ShoppingBazarHub.in'").fetchone()
     if not admin:
-        c.execute("INSERT INTO users(name,email,password,role,approved) VALUES(?,?,?,?,1)",('ShopNexa Admin','admin@shopnexa.in',generate_password_hash('Admin@123'),'admin'))
+        c.execute("INSERT INTO users(name,email,password,role,approved) VALUES(?,?,?,?,1)",('ShoppingBazarHub Admin','admin@ShoppingBazarHub.in',generate_password_hash('Admin@123'),'admin'))
     if not c.execute("SELECT id FROM coupons WHERE code='WELCOME10'").fetchone():
         c.execute("INSERT INTO coupons(code,discount_percent,active) VALUES('WELCOME10',10,1)")
     c.commit(); c.close()
