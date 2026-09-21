@@ -29,7 +29,7 @@ def add_column(c, table, column, definition):
 
 
 def init_db():
-    c=db()
+    c = db()
     c.executescript('''
     CREATE TABLE IF NOT EXISTS users(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -105,15 +105,26 @@ def init_db():
       active INTEGER DEFAULT 1
     );
     ''')
-    add_column(c,'orders','forwarded','INTEGER DEFAULT 0')
-    add_column(c,'orders','coupon_code','TEXT')
-    add_column(c,'orders','discount','REAL DEFAULT 0')
-    add_column(c,'orders','shipping_partner','TEXT')
-    add_column(c,'orders','tracking_number','TEXT')
-    add_column(c,'orders','payment_method',"TEXT DEFAULT 'COD'")
-    add_column(c,'orders','payment_status',"TEXT DEFAULT 'Pending'")
-    c.execute("CREATE TABLE IF NOT EXISTS order_status_history(id INTEGER PRIMARY KEY AUTOINCREMENT, order_id INTEGER NOT NULL, status TEXT NOT NULL, note TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)")
-       admin = c.execute(
+
+    add_column(c, 'orders', 'forwarded', 'INTEGER DEFAULT 0')
+    add_column(c, 'orders', 'coupon_code', 'TEXT')
+    add_column(c, 'orders', 'discount', 'REAL DEFAULT 0')
+    add_column(c, 'orders', 'shipping_partner', 'TEXT')
+    add_column(c, 'orders', 'tracking_number', 'TEXT')
+    add_column(c, 'orders', 'payment_method', "TEXT DEFAULT 'COD'")
+    add_column(c, 'orders', 'payment_status', "TEXT DEFAULT 'Pending'")
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS order_status_history(
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            order_id INTEGER NOT NULL,
+            status TEXT NOT NULL,
+            note TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    admin = c.execute(
         "SELECT id FROM users WHERE email=?",
         ("admin@ShoppingBazarHub.in",)
     ).fetchone()
@@ -139,14 +150,15 @@ def init_db():
             )
         )
 
-    if not c.execute("SELECT id FROM coupons WHERE code='WELCOME10'").fetchone():
+    if not c.execute(
+        "SELECT id FROM coupons WHERE code='WELCOME10'"
+    ).fetchone():
         c.execute(
             "INSERT INTO coupons(code,discount_percent,active) VALUES('WELCOME10',10,1)"
         )
 
     c.commit()
     c.close()
-
 def allowed_file(name):
     return '.' in name and name.rsplit('.',1)[1].lower() in ALLOWED_EXTENSIONS
 
