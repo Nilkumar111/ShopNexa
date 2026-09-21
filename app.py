@@ -113,36 +113,39 @@ def init_db():
     add_column(c,'orders','payment_method',"TEXT DEFAULT 'COD'")
     add_column(c,'orders','payment_status',"TEXT DEFAULT 'Pending'")
     c.execute("CREATE TABLE IF NOT EXISTS order_status_history(id INTEGER PRIMARY KEY AUTOINCREMENT, order_id INTEGER NOT NULL, status TEXT NOT NULL, note TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)")
-   admin = c.execute(
-    "SELECT id FROM users WHERE email=?",
-    ("admin@ShoppingBazarHub.in",)
-).fetchone()
+       admin = c.execute(
+        "SELECT id FROM users WHERE email=?",
+        ("admin@ShoppingBazarHub.in",)
+    ).fetchone()
 
-if admin:
-    c.execute(
-        "UPDATE users SET password=?, role=?, approved=1 WHERE email=?",
-        (
-            generate_password_hash("Admin@123"),
-            "admin",
-            "admin@ShoppingBazarHub.in"
+    if admin:
+        c.execute(
+            "UPDATE users SET password=?, role=?, approved=1 WHERE email=?",
+            (
+                generate_password_hash("Admin@123"),
+                "admin",
+                "admin@ShoppingBazarHub.in"
+            )
         )
-    )
-else:
-    c.execute(
-        "INSERT INTO users(name,email,password,role,approved) VALUES(?,?,?,?,1)",
-        (
-            "ShoppingBazarHub Admin",
-            "admin@ShoppingBazarHub.in",
-            generate_password_hash("Admin@123"),
-            "admin",
-            1
+    else:
+        c.execute(
+            "INSERT INTO users(name,email,password,role,approved) VALUES(?,?,?,?,?)",
+            (
+                "ShoppingBazarHub Admin",
+                "admin@ShoppingBazarHub.in",
+                generate_password_hash("Admin@123"),
+                "admin",
+                1
+            )
         )
-    
-    )
+
     if not c.execute("SELECT id FROM coupons WHERE code='WELCOME10'").fetchone():
-        c.execute("INSERT INTO coupons(code,discount_percent,active) VALUES('WELCOME10',10,1)")
-    c.commit(); c.close()
+        c.execute(
+            "INSERT INTO coupons(code,discount_percent,active) VALUES('WELCOME10',10,1)"
+        )
 
+    c.commit()
+    c.close()
 
 def allowed_file(name):
     return '.' in name and name.rsplit('.',1)[1].lower() in ALLOWED_EXTENSIONS
