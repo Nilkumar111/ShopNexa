@@ -232,8 +232,8 @@ def home():
     q=request.args.get('q','').strip(); category=request.args.get('category','').strip(); sort=request.args.get('sort','newest')
     sql="SELECT p.*,u.name supplier, COALESCE((SELECT AVG(rating) FROM reviews r WHERE r.product_id=p.id),0) rating, (SELECT COUNT(*) FROM reviews r WHERE r.product_id=p.id) review_count FROM products p JOIN users u ON u.id=p.supplier_id WHERE p.approved=1 AND p.stock>0"
     args=[]
-    if q: sql += " AND (p.name LIKE ? OR p.description LIKE ? OR p.category LIKE ?)"; args += [f'%{q}%']*3
-    if category: sql += " AND p.category=?"; args.append(category)
+    if q: sql += " AND (p.name LIKE %s OR p.description LIKE %s OR p.category LIKE %s"; args += [f'%{q}%']*3
+    if category: sql += " AND p.category=%s"; args.append(category)
     sql += {'price_low':' ORDER BY p.selling_price ASC','price_high':' ORDER BY p.selling_price DESC','rating':' ORDER BY rating DESC','newest':' ORDER BY p.id DESC'}.get(sort,' ORDER BY p.id DESC')
     c=db(); products=c.execute(sql,args).fetchall(); categories=c.execute("SELECT DISTINCT category FROM products WHERE approved=1 ORDER BY category").fetchall(); c.close()
     return render_template('home.html',products=products,categories=categories,q=q,category=category,sort=sort)
@@ -257,7 +257,7 @@ def register():
 @app.route('/login',methods=['GET','POST'])
 def login():
     if request.method=='POST':
-        f=request.form; c=db(); u=c.execute("SELECT * FROM users WHERE LOWER(email)=LOWER(?)",(f['email'].strip(),)).fetchone()
+        f=request.form; c=db(); u=c.execute("SELECT * FROM users WHERE LOWER(email)=LOWER(%s)",(f['email'].strip(),)).fetchone()
         if u and check_password_hash(u['password'],f['password']):
             if u['role']=='supplier' and not u['approved']:
                 flash('Supplier account is awaiting admin approval.','err'); return redirect('/login')
@@ -272,8 +272,8 @@ def logout(): session.clear(); return redirect('/')
 
 @app.route('/account')
 def account():
-    if not current_user(): return redirect('/login?next=/account')
-    c=db(); addresses=c.execute('SELECT * FROM addresses WHERE customer_id=? ORDER BY id DESC',(current_user()['id'],)).fetchall(); orders=c.execute('SELECT * FROM orders WHERE customer_id=? ORDER BY id DESC',(current_user()['id'],)).fetchall(); c.close()
+    if not current_user(): return redirect('/login%snext=/account')
+    c=db(); addresses=c.execute('SELECT * FROM addresses WHERE customer_id=%s ORDER BY id DESC',(current_user()['id'],)).fetchall(); orders=c.execute('SELECT * FROM orders WHERE customer_id=%s ORDER BY id DESC',(current_user()['id'],)).fetchall(); c.close()
     return render_template('account.html',addresses=addresses,orders=orders)
 
 
@@ -287,14 +287,14 @@ def add_address():
 def delete_address(aid):
     if not role_required('customer'):
         return redirect('/login')
-    c=db(); c.execute('DELETE FROM addresses WHERE id=? AND customer_id=?',(aid,current_user()['id'])); c.commit(); c.close()
+    c=db(); c.execute('DELETE FROM addresses WHERE id=%s AND customer_id=%s',(aid,current_user()['id'])); c.commit(); c.close()
     flash('Address removed.','ok')
     return redirect('/account')
 
 
 @app.route('/product/<int:pid>')
 def product(pid):
-    c=db(); p=c.execute('''SELECT p.*,u.name supplier,COALESCE((SELECT AVG(rating) FROM reviews r WHERE r.product_id=p.id),0) rating,(SELECT COUNT(*) FROM reviews r WHERE r.product_id=p.id) review_count FROM products p JOIN users u ON u.id=p.supplier_id WHERE p.id=? AND p.approved=1''',(pid,)).fetchone(); reviews=c.execute('SELECT r.*,u.name customer_name FROM reviews r JOIN users u ON u.id=r.customer_id WHERE r.product_id=? ORDER BY r.id DESC',(pid,)).fetchall() if p else []; c.close()
+    c=db(); p=c.execute('''SELECT p.*,u.name supplier,COALESCE((SELECT AVG(rating) FROM reviews r WHERE r.product_id=p.id),0) rating,(SELECT COUNT(*) FROM reviews r WHERE r.product_id=p.id) review_count FROM products p JOIN users u ON u.id=p.supplier_id WHERE p.id=%s AND p.approved=1''',(pid,)).fetchone(); reviews=c.execute('SELECT r.*,u.name customer_name FROM reviews r JOIN users u ON u.id=r.customer_id WHERE r.product_id=%s ORDER BY r.id DESC',(pid,)).fetchall() if p else []; c.close()
     return render_template('product.html',product=p,reviews=reviews) if p else redirect('/')
 
 
@@ -302,7 +302,7 @@ def product(pid):
 def review(pid):
     if not role_required('customer'): return redirect('/login')
     rating=max(1,min(5,int(request.form.get('rating',5)))); comment=request.form.get('comment','').strip(); c=db()
-    bought=c.execute('SELECT 1 FROM order_items oi JOIN orders o ON o.id=oi.order_id WHERE oi.product_id=? AND o.customer_id=? AND o.status != "Cancelled"',(pid,current_user()['id'])).fetchone()
+    bought=c.execute('SELECT 1 FROM order_items oi JOIN orders o ON o.id=oi.order_id WHERE oi.product_id=%s AND o.customer_id=%s AND o.status != "Cancelled"',(pid,current_user()['id'])).fetchone()
     if not bought: flash('You can review products you have ordered.','err')
     else:
         c.execute('INSERT INTO reviews(product_id,customer_id,rating,comment) VALUES(%s,%s,%s,%s)' ON CONFLICT(product_id,customer_id) DO UPDATE SET rating=excluded.rating,comment=excluded.comment',(pid,current_user()['id'],rating,comment)); c.commit(); flash('Review saved.','ok')
@@ -312,14 +312,14 @@ def review(pid):
 @app.route('/wishlist')
 def wishlist():
     if not role_required('customer'): return redirect('/login')
-    c=db(); products=c.execute('SELECT p.*,u.name supplier FROM wishlists w JOIN products p ON p.id=w.product_id JOIN users u ON u.id=p.supplier_id WHERE w.customer_id=? ORDER BY w.id DESC',(current_user()['id'],)).fetchall(); c.close(); return render_template('wishlist.html',products=products)
+    c=db(); products=c.execute('SELECT p.*,u.name supplier FROM wishlists w JOIN products p ON p.id=w.product_id JOIN users u ON u.id=p.supplier_id WHERE w.customer_id=%s ORDER BY w.id DESC',(current_user()['id'],)).fetchall(); c.close(); return render_template('wishlist.html',products=products)
 
 
 @app.route('/wishlist/toggle/<int:pid>')
 def toggle_wishlist(pid):
     if not role_required('customer'): return redirect('/login')
-    c=db(); row=c.execute('SELECT id FROM wishlists WHERE customer_id=? AND product_id=?',(current_user()['id'],pid)).fetchone()
-    if row: c.execute('DELETE FROM wishlists WHERE id=?',(row['id'],)); flash('Removed from wishlist.','ok')
+    c=db(); row=c.execute('SELECT id FROM wishlists WHERE customer_id=%s AND product_id=%s',(current_user()['id'],pid)).fetchone()
+    if row: c.execute('DELETE FROM wishlists WHERE id=%s',(row['id'],)); flash('Removed from wishlist.','ok')
     else: c.execute('INSERT INTO wishlists(customer_id,product_id) VALUES(%s,%s) ON CONFLICT (customer_id,product_id) DO NOTHING',(current_user()['id'],pid)); flash('Added to wishlist.','ok')
     c.commit(); c.close(); return redirect(request.referrer or '/')
 
@@ -327,7 +327,7 @@ def toggle_wishlist(pid):
 # CART: stored as {product_id: quantity}
 @app.route('/add/<int:pid>')
 def add(pid):
-    c=db(); p=c.execute('SELECT id,stock FROM products WHERE id=? AND approved=1 AND stock>0',(pid,)).fetchone(); c.close()
+    c=db(); p=c.execute('SELECT id,stock FROM products WHERE id=%s AND approved=1 AND stock>0',(pid,)).fetchone(); c.close()
     if not p: flash('Product is unavailable.','err'); return redirect(request.referrer or '/')
     cart=session.setdefault('cart',{}); key=str(pid); qty=int(cart.get(key,0))
     if qty < p['stock']: cart[key]=qty+1; session.modified=True; flash('Product added to cart.','ok')
@@ -346,7 +346,7 @@ def cart():
     for key,qty in cart_data.items():
         try: pid=int(key); qty=max(1,int(qty))
         except: continue
-        p=c.execute('SELECT * FROM products WHERE id=? AND approved=1',(pid,)).fetchone()
+        p=c.execute('SELECT * FROM products WHERE id=%s AND approved=1',(pid,)).fetchone()
         if p and p['stock']>0:
             qty=min(qty,p['stock']); items.append(p); clean[str(pid)]=qty
     c.close(); session['cart']=clean; session.modified=True
@@ -374,14 +374,14 @@ def remove_from_cart(pid):
 @app.route('/checkout',methods=['GET','POST'])
 def checkout():
     if not role_required('customer'):
-        return redirect('/login?next=/checkout')
+        return redirect('/login%snext=/checkout')
     cart_data=session.get('cart',{}); c=db(); items=[]
     for key,qty in cart_data.items():
         try: pid=int(key); qty=max(1,int(qty))
         except Exception: continue
-        p=c.execute('SELECT * FROM products WHERE id=? AND approved=1 AND stock>0',(pid,)).fetchone()
+        p=c.execute('SELECT * FROM products WHERE id=%s AND approved=1 AND stock>0',(pid,)).fetchone()
         if p: items.append((p,min(qty,p['stock'])))
-    addresses=c.execute('SELECT * FROM addresses WHERE customer_id=? ORDER BY id DESC',(current_user()['id'],)).fetchall(); c.close()
+    addresses=c.execute('SELECT * FROM addresses WHERE customer_id=%s ORDER BY id DESC',(current_user()['id'],)).fetchall(); c.close()
     if not items:
         flash('Your cart is empty.','err'); return redirect('/cart')
     subtotal=sum(p['selling_price']*qty for p,qty in items); discount=0; coupon=''; payment_method='COD'
@@ -393,7 +393,7 @@ def checkout():
             flash('Delivery address is required.','err')
             return render_template('checkout.html',items=items,subtotal=subtotal,discount=0,total=subtotal,addresses=addresses,coupon=coupon,payment_method=payment_method)
         if coupon:
-            cc=db(); row=cc.execute('SELECT * FROM coupons WHERE code=? AND active=1',(coupon,)).fetchone(); cc.close()
+            cc=db(); row=cc.execute('SELECT * FROM coupons WHERE code=%s AND active=1',(coupon,)).fetchone(); cc.close()
             if row: discount=round(subtotal*row['discount_percent']/100,2)
             else: flash('Invalid coupon code.','err'); coupon=''
         total=round(subtotal-discount,2); cost=sum(p['supplier_price']*qty for p,qty in items); margin=round(total-cost,2)
@@ -436,7 +436,7 @@ cur = c.execute(
 oid = cur.fetchone()['id']
         for p,qty in items:
             c.execute('INSERT INTO order_items(order_id,product_id,supplier_id,qty,price) VALUES(%s,%s,%s,%s,%s)',(oid,p['id'],p['supplier_id'],qty,p['selling_price']))
-            c.execute('UPDATE products SET stock=stock-? WHERE id=? AND stock>=?',(qty,p['id'],qty))
+            c.execute('UPDATE products SET stock=stock-%s WHERE id=%s AND stock>=%s',(qty,p['id'],qty))
         c.execute('INSERT INTO order_status_history(order_id,status,note) VALUES(%s,%s,%s)',(oid,'Pending','Order placed by customer'))
         c.commit(); c.close(); session['cart']={}
         flash(f'Order #SN{oid} placed successfully.','ok'); return redirect('/orders')
@@ -446,16 +446,16 @@ oid = cur.fetchone()['id']
 @app.route('/orders')
 def orders():
     if not role_required('customer'): return redirect('/login')
-    c=db(); orders=c.execute('SELECT * FROM orders WHERE customer_id=? ORDER BY id DESC',(current_user()['id'],)).fetchall(); c.close(); return render_template('orders.html',orders=orders)
+    c=db(); orders=c.execute('SELECT * FROM orders WHERE customer_id=%s ORDER BY id DESC',(current_user()['id'],)).fetchall(); c.close(); return render_template('orders.html',orders=orders)
 
 
 @app.route('/order/<int:oid>')
 def order_detail(oid):
     if not current_user(): return redirect('/login')
-    c=db(); o=c.execute('SELECT * FROM orders WHERE id=?',(oid,)).fetchone()
+    c=db(); o=c.execute('SELECT * FROM orders WHERE id=%s',(oid,)).fetchone()
     if not o or (current_user()['role']=='customer' and o['customer_id']!=current_user()['id']): c.close(); return redirect('/')
-    items=c.execute('SELECT oi.*,p.name product_name,p.image_url FROM order_items oi JOIN products p ON p.id=oi.product_id WHERE oi.order_id=?',(oid,)).fetchall()
-    history=c.execute('SELECT * FROM order_status_history WHERE order_id=? ORDER BY id',(oid,)).fetchall(); c.close()
+    items=c.execute('SELECT oi.*,p.name product_name,p.image_url FROM order_items oi JOIN products p ON p.id=oi.product_id WHERE oi.order_id=%s',(oid,)).fetchall()
+    history=c.execute('SELECT * FROM order_status_history WHERE order_id=%s ORDER BY id',(oid,)).fetchall(); c.close()
     return render_template('order_detail.html',order=o,items=items,history=history)
 @app.route('/order/<int:oid>/track')
 def track_order(oid):
@@ -465,7 +465,7 @@ def track_order(oid):
     c = db()
 
     order = c.execute(
-        'SELECT * FROM orders WHERE id=?',
+        'SELECT * FROM orders WHERE id=%s',
         (oid,)
     ).fetchone()
 
@@ -480,7 +480,7 @@ def track_order(oid):
         '''
         SELECT *
         FROM order_status_history
-        WHERE order_id=?
+        WHERE order_id=%s
         ORDER BY id
         ''',
         (oid,)
@@ -501,7 +501,7 @@ def order_invoice(oid):
     c = db()
 
     order = c.execute(
-        'SELECT * FROM orders WHERE id=?',
+        'SELECT * FROM orders WHERE id=%s',
         (oid,)
     ).fetchone()
 
@@ -518,7 +518,7 @@ def order_invoice(oid):
         SELECT oi.*, p.name product_name
         FROM order_items oi
         JOIN products p ON p.id=oi.product_id
-        WHERE oi.order_id=?
+        WHERE oi.order_id=%s
         ''',
         (oid,)
     ).fetchall()
@@ -534,10 +534,10 @@ def order_invoice(oid):
 @app.route('/order/<int:oid>/cancel')
 def cancel_order(oid):
     if not role_required('customer'): return redirect('/login')
-    c=db(); o=c.execute('SELECT * FROM orders WHERE id=? AND customer_id=?',(oid,current_user()['id'],)).fetchone()
+    c=db(); o=c.execute('SELECT * FROM orders WHERE id=%s AND customer_id=%s',(oid,current_user()['id'],)).fetchone()
     if o and o['status'] in ('Pending','Processing'):
-        for i in c.execute('SELECT * FROM order_items WHERE order_id=?',(oid,)).fetchall(): c.execute('UPDATE products SET stock=stock+? WHERE id=?',(i['qty'],i['product_id']))
-        c.execute("UPDATE orders SET status='Cancelled' WHERE id=?",(oid,)); c.execute('INSERT INTO order_status_history(order_id,status,note) VALUES(%s,%s,%s)',(oid,'Cancelled','Cancelled by customer')); c.commit(); flash('Order cancelled. Stock restored.','ok')
+        for i in c.execute('SELECT * FROM order_items WHERE order_id=%s',(oid,)).fetchall(): c.execute('UPDATE products SET stock=stock+%s WHERE id=%s',(i['qty'],i['product_id']))
+        c.execute("UPDATE orders SET status='Cancelled' WHERE id=%s",(oid,)); c.execute('INSERT INTO order_status_history(order_id,status,note) VALUES(%s,%s,%s)',(oid,'Cancelled','Cancelled by customer')); c.commit(); flash('Order cancelled. Stock restored.','ok')
     c.close(); return redirect(f'/order/{oid}')
 @app.route('/admin/return/<int:oid>/approve')
 def approve_return(oid):
@@ -547,14 +547,14 @@ def approve_return(oid):
     c = db()
 
     o = c.execute(
-        "SELECT * FROM orders WHERE id=?",
+        "SELECT * FROM orders WHERE id=%s",
         (oid,)
     ).fetchone()
 
     if o and o['status'] == 'Return Requested':
 
         c.execute(
-            "UPDATE orders SET status='Return Approved' WHERE id=?",
+            "UPDATE orders SET status='Return Approved' WHERE id=%s",
             (oid,)
         )
 
@@ -587,14 +587,14 @@ def reject_return(oid):
     c = db()
 
     o = c.execute(
-        "SELECT * FROM orders WHERE id=?",
+        "SELECT * FROM orders WHERE id=%s",
         (oid,)
     ).fetchone()
 
     if o and o['status'] == 'Return Requested':
 
         c.execute(
-            "UPDATE orders SET status='Delivered' WHERE id=?",
+            "UPDATE orders SET status='Delivered' WHERE id=%s",
             (oid,)
         )
 
@@ -625,14 +625,14 @@ def return_order(oid):
     c = db()
 
     o = c.execute(
-        'SELECT * FROM orders WHERE id=? AND customer_id=?',
+        'SELECT * FROM orders WHERE id=%s AND customer_id=%s',
         (oid, current_user()['id'])
     ).fetchone()
 
     if o and o['status'] == 'Delivered':
 
         c.execute(
-            "UPDATE orders SET status='Return Requested' WHERE id=?",
+            "UPDATE orders SET status='Return Requested' WHERE id=%s",
             (oid,)
         )
 
@@ -659,7 +659,7 @@ def return_order(oid):
 @app.route('/supplier')
 def supplier():
     if not role_required('supplier'): return redirect('/login')
-    c=db(); products=c.execute('SELECT * FROM products WHERE supplier_id=? ORDER BY id DESC',(current_user()['id'],)).fetchall(); items=c.execute('''SELECT oi.*,o.status,o.address,o.created_at,o.forwarded,u.name customer_name,p.name product_name,p.supplier_price FROM order_items oi JOIN orders o ON o.id=oi.order_id JOIN users u ON u.id=o.customer_id JOIN products p ON p.id=oi.product_id WHERE oi.supplier_id=? AND o.forwarded=1 ORDER BY o.id DESC''',(current_user()['id'],)).fetchall(); c.close(); return render_template('supplier.html',products=products,items=items)
+    c=db(); products=c.execute('SELECT * FROM products WHERE supplier_id=%s ORDER BY id DESC',(current_user()['id'],)).fetchall(); items=c.execute('''SELECT oi.*,o.status,o.address,o.created_at,o.forwarded,u.name customer_name,p.name product_name,p.supplier_price FROM order_items oi JOIN orders o ON o.id=oi.order_id JOIN users u ON u.id=o.customer_id JOIN products p ON p.id=oi.product_id WHERE oi.supplier_id=%s AND o.forwarded=1 ORDER BY o.id DESC''',(current_user()['id'],)).fetchall(); c.close(); return render_template('supplier.html',products=products,items=items)
 
 
 @app.route('/supplier/product',methods=['POST'])
@@ -674,20 +674,20 @@ def add_product():
 @app.route('/supplier/product/<int:pid>/edit',methods=['GET','POST'])
 def edit_product(pid):
     if not role_required('supplier'): return redirect('/login')
-    c=db(); product=c.execute('SELECT * FROM products WHERE id=? AND supplier_id=?',(pid,current_user()['id'])).fetchone()
+    c=db(); product=c.execute('SELECT * FROM products WHERE id=%s AND supplier_id=%s',(pid,current_user()['id'])).fetchone()
     if not product: c.close(); flash('Product not found.','err'); return redirect('/supplier')
     if request.method=='POST':
         f=request.form
         try: sp=float(f['supplier_price']); sell=float(f['selling_price']); stock=max(0,int(f['stock']))
         except (ValueError,KeyError): c.close(); flash('Enter valid price and stock.','err'); return redirect(f'/supplier/product/{pid}/edit')
-        c.execute('UPDATE products SET name=?,category=?,description=?,supplier_price=?,selling_price=?,stock=?,approved=0 WHERE id=? AND supplier_id=?',(f['name'].strip(),f['category'].strip(),f.get('description','').strip(),sp,sell,stock,pid,current_user()['id'])); c.commit(); c.close(); flash('Product updated and sent for re-approval.','ok'); return redirect('/supplier')
+        c.execute('UPDATE products SET name=%s,category=%s,description=%s,supplier_price=%s,selling_price=%s,stock=%s,approved=0 WHERE id=%s AND supplier_id=%s',(f['name'].strip(),f['category'].strip(),f.get('description','').strip(),sp,sell,stock,pid,current_user()['id'])); c.commit(); c.close(); flash('Product updated and sent for re-approval.','ok'); return redirect('/supplier')
     c.close(); return render_template('supplier_edit.html',product=product)
 
 
 @app.route('/supplier/product/<int:pid>/archive')
 def archive_product(pid):
     if not role_required('supplier'): return redirect('/login')
-    c=db(); c.execute('UPDATE products SET approved=0 WHERE id=? AND supplier_id=?',(pid,current_user()['id'])); c.commit(); c.close(); flash('Product archived from storefront.','ok'); return redirect('/supplier')
+    c=db(); c.execute('UPDATE products SET approved=0 WHERE id=%s AND supplier_id=%s',(pid,current_user()['id'])); c.commit(); c.close(); flash('Product archived from storefront.','ok'); return redirect('/supplier')
 
 # =========================
 # SHIPPING / TRACKING
@@ -723,7 +723,7 @@ def supplier_shipping(oid):
         '''
         SELECT 1
         FROM order_items
-        WHERE order_id=? AND supplier_id=?
+        WHERE order_id=%s AND supplier_id=%s
         ''',
         (oid, current_user()['id'])
     ).fetchone()
@@ -736,11 +736,11 @@ def supplier_shipping(oid):
         c.execute(
             '''
             UPDATE orders
-            SET shipping_partner=?,
-                tracking_number=?,
-                shipped_at=?,
+            SET shipping_partner=%s,
+                tracking_number=%s,
+                shipped_at=%s,
                 status='Shipped'
-            WHERE id=? AND forwarded=1
+            WHERE id=%s AND forwarded=1
             ''',
             (partner, tracking, now, oid)
         )
@@ -773,7 +773,7 @@ def supplier_status(oid, status):
     c = db()
 
     ok = c.execute(
-        'SELECT 1 FROM order_items WHERE order_id=? AND supplier_id=?',
+        'SELECT 1 FROM order_items WHERE order_id=%s AND supplier_id=%S',
         (oid, current_user()['id'])
     ).fetchone()
 
@@ -793,10 +793,10 @@ def supplier_status(oid, status):
         c.execute(
             '''
             UPDATE orders
-            SET status=?,
-                shipping_partner=?,
-                tracking_number=?
-            WHERE id=? AND forwarded=1
+            SET status=%s,
+                shipping_partner=%s,
+                tracking_number=%s
+            WHERE id=%s AND forwarded=1
             ''',
             ('Shipped', shipping_partner, tracking_number, oid)
         )
@@ -805,7 +805,7 @@ def supplier_status(oid, status):
             '''
             INSERT INTO order_status_history
             (order_id, status, note)
-            VALUES (?, ?, ?)
+            VALUES (%s, %s, %s)
             ''',
             (
                 oid,
@@ -818,8 +818,8 @@ def supplier_status(oid, status):
         c.execute(
             '''
             UPDATE orders
-            SET status=?
-            WHERE id=? AND forwarded=1
+            SET status=%s
+            WHERE id=%s AND forwarded=1
             ''',
             (status, oid)
         )
@@ -828,7 +828,7 @@ def supplier_status(oid, status):
             '''
             INSERT INTO order_status_history
             (order_id, status, note)
-            VALUES (?, ?, ?)
+            VALUES (%s, %s, %s)
             ''',
             (oid, status, 'Updated by supplier')
         )
@@ -843,7 +843,7 @@ def supplier_status(oid, status):
                         THEN 'Pending Collection'
                         ELSE payment_status
                     END
-                WHERE id=?
+                WHERE id=%s
                 ''',
                 (oid,)
             )
@@ -948,31 +948,31 @@ def admin():
 @app.route('/admin/supplier/<int:uid>/approve')
 def approve_supplier(uid):
     if not role_required('admin'): return redirect('/login')
-    c=db(); c.execute('UPDATE users SET approved=1 WHERE id=? AND role="supplier"',(uid,)); c.commit(); c.close(); return redirect('/admin')
+    c=db(); c.execute('UPDATE users SET approved=1 WHERE id=%s AND role="supplier"',(uid,)); c.commit(); c.close(); return redirect('/admin')
 
 
 @app.route('/admin/product/<int:pid>/approve')
 def approve_product(pid):
     if not role_required('admin'): return redirect('/login')
-    c=db(); c.execute('UPDATE products SET approved=1 WHERE id=?',(pid,)); c.commit(); c.close(); return redirect('/admin')
+    c=db(); c.execute('UPDATE products SET approved=1 WHERE id=%s',(pid,)); c.commit(); c.close(); return redirect('/admin')
 
 
 @app.route('/admin/product/<int:pid>/reject')
 def reject_product(pid):
     if not role_required('admin'): return redirect('/login')
-    c=db(); c.execute('UPDATE products SET approved=0 WHERE id=?',(pid,)); c.commit(); c.close(); return redirect('/admin')
+    c=db(); c.execute('UPDATE products SET approved=0 WHERE id=%s',(pid,)); c.commit(); c.close(); return redirect('/admin')
 
 
 @app.route('/admin/order/<int:oid>/<status>')
 def admin_status(oid,status):
     if not role_required('admin') or status not in STATUSES: return redirect('/login')
-    c=db(); c.execute('UPDATE orders SET status=? WHERE id=?',(status,oid)); c.execute('INSERT INTO order_status_history(order_id,status,note) VALUES(%s,%s,%s)',(oid,status,'Updated by admin'))(oid,status,'Updated by admin')); c.commit(); c.close(); return redirect('/admin')
+    c=db(); c.execute('UPDATE orders SET status=%s WHERE id=%s',(status,oid)); c.execute('INSERT INTO order_status_history(order_id,status,note) VALUES(%s,%s,%s)',(oid,status,'Updated by admin'))(oid,status,'Updated by admin')); c.commit(); c.close(); return redirect('/admin')
 
 
 @app.route('/admin/order/<int:oid>/forward')
 def forward_order(oid):
     if not role_required('admin'): return redirect('/login')
-    c=db(); c.execute("UPDATE orders SET forwarded=1,status='Processing' WHERE id=? AND status != 'Cancelled'",(oid,)); c.execute('INSERT INTO order_status_history(order_id,status,note) VALUES(%s,%s,%s)',(oid,'Processing','Forwarded to supplier by admin')); c.commit(); c.close(); flash(f'Order #{oid} forwarded to supplier.','ok'); return redirect('/admin')
+    c=db(); c.execute("UPDATE orders SET forwarded=1,status='Processing' WHERE id=%s AND status != 'Cancelled'",(oid,)); c.execute('INSERT INTO order_status_history(order_id,status,note) VALUES(%s,%s,%s)',(oid,'Processing','Forwarded to supplier by admin')); c.commit(); c.close(); flash(f'Order #{oid} forwarded to supplier.','ok'); return redirect('/admin')
 
 
 @app.route('/admin/coupon',methods=['POST'])
@@ -988,13 +988,13 @@ def add_coupon():
 @app.route('/admin/coupon/<int:cid>/toggle')
 def toggle_coupon(cid):
     if not role_required('admin'): return redirect('/login')
-    c=db(); c.execute('UPDATE coupons SET active=CASE WHEN active=1 THEN 0 ELSE 1 END WHERE id=?',(cid,)); c.commit(); c.close(); flash('Coupon status updated.','ok'); return redirect('/admin')
+    c=db(); c.execute('UPDATE coupons SET active=CASE WHEN active=1 THEN 0 ELSE 1 END WHERE id=%s',(cid,)); c.commit(); c.close(); flash('Coupon status updated.','ok'); return redirect('/admin')
 
 
 @app.route('/admin/coupon/<int:cid>/delete')
 def delete_coupon(cid):
     if not role_required('admin'): return redirect('/login')
-    c=db(); c.execute('DELETE FROM coupons WHERE id=?',(cid,)); c.commit(); c.close(); flash('Coupon deleted.','ok'); return redirect('/admin')
+    c=db(); c.execute('DELETE FROM coupons WHERE id=%s',(cid,)); c.commit(); c.close(); flash('Coupon deleted.','ok'); return redirect('/admin')
 
 
 init_db()
