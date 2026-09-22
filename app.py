@@ -668,7 +668,7 @@ def add_product():
     f=request.form; image_url=f.get('image_url','').strip(); file=request.files.get('image_file')
     if file and file.filename and allowed_file(file.filename):
         filename=secure_filename(file.filename); base,ext=os.path.splitext(filename); filename=f'{base}_{datetime.now().strftime("%Y%m%d%H%M%S%f")}{ext}'; file.save(os.path.join(app.config['UPLOAD_FOLDER'],filename)); image_url=url_for('static',filename=f'uploads/{filename}')
-    c=db(); c.execute('INSERT INTO products(supplier_id,name,category,description,supplier_price,selling_price,stock,image_url) VALUES(?,?,?,?,?,?,?,?)',(current_user()['id'],f['name'].strip(),f['category'].strip(),f.get('description','').strip(),float(f['supplier_price']),float(f['selling_price']),max(0,int(f['stock'])),image_url)); c.commit(); c.close(); flash('Product submitted for admin approval.','ok'); return redirect('/supplier')
+    c=db(); c.execute('INSERT INTO products(supplier_id,name,category,description,supplier_price,selling_price,stock,image_url) VALUES(%s,%s,%s,%s,%s,%s,%s,%s)',(current_user()['id'],f['name'].strip(),f['category'].strip(),f.get('description','').strip(),float(f['supplier_price']),float(f['selling_price']),max(0,int(f['stock'])),image_url)); c.commit(); c.close(); flash('Product submitted for admin approval.','ok'); return redirect('/supplier')
 
 
 @app.route('/supplier/product/<int:pid>/edit',methods=['GET','POST'])
