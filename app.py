@@ -435,9 +435,9 @@ cur = c.execute(
 
 oid = cur.fetchone()['id']
         for p,qty in items:
-            c.execute('INSERT INTO order_items(order_id,product_id,supplier_id,qty,price) VALUES(?,?,?,?,?)',(oid,p['id'],p['supplier_id'],qty,p['selling_price']))
+            c.execute('INSERT INTO order_items(order_id,product_id,supplier_id,qty,price) VALUES(%s,%s,%s,%s,%s)',(oid,p['id'],p['supplier_id'],qty,p['selling_price']))
             c.execute('UPDATE products SET stock=stock-? WHERE id=? AND stock>=?',(qty,p['id'],qty))
-        c.execute('INSERT INTO order_status_history(order_id,status,note) VALUES(?,?,?)',(oid,'Pending','Order placed by customer'))
+        c.execute('INSERT INTO order_status_history(order_id,status,note) VALUES(%s,%s,%s)',(oid,'Pending','Order placed by customer'))
         c.commit(); c.close(); session['cart']={}
         flash(f'Order #SN{oid} placed successfully.','ok'); return redirect('/orders')
     return render_template('checkout.html',items=items,subtotal=subtotal,discount=0,total=subtotal,addresses=addresses,coupon='',payment_method='COD')
@@ -537,7 +537,7 @@ def cancel_order(oid):
     c=db(); o=c.execute('SELECT * FROM orders WHERE id=? AND customer_id=?',(oid,current_user()['id'],)).fetchone()
     if o and o['status'] in ('Pending','Processing'):
         for i in c.execute('SELECT * FROM order_items WHERE order_id=?',(oid,)).fetchall(): c.execute('UPDATE products SET stock=stock+? WHERE id=?',(i['qty'],i['product_id']))
-        c.execute("UPDATE orders SET status='Cancelled' WHERE id=?",(oid,)); c.execute('INSERT INTO order_status_history(order_id,status,note) VALUES(?,?,?)',(oid,'Cancelled','Cancelled by customer')); c.commit(); flash('Order cancelled. Stock restored.','ok')
+        c.execute("UPDATE orders SET status='Cancelled' WHERE id=?",(oid,)); c.execute('INSERT INTO order_status_history(order_id,status,note) VALUES(%s,%s,%s)',(oid,'Cancelled','Cancelled by customer')); c.commit(); flash('Order cancelled. Stock restored.','ok')
     c.close(); return redirect(f'/order/{oid}')
 @app.route('/admin/return/<int:oid>/approve')
 def approve_return(oid):
