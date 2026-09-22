@@ -966,13 +966,13 @@ def reject_product(pid):
 @app.route('/admin/order/<int:oid>/<status>')
 def admin_status(oid,status):
     if not role_required('admin') or status not in STATUSES: return redirect('/login')
-    c=db(); c.execute('UPDATE orders SET status=? WHERE id=?',(status,oid)); c.execute('INSERT INTO order_status_history(order_id,status,note) VALUES(?,?,?)',(oid,status,'Updated by admin')); c.commit(); c.close(); return redirect('/admin')
+    c=db(); c.execute('UPDATE orders SET status=? WHERE id=?',(status,oid)); c.execute('INSERT INTO order_status_history(order_id,status,note) VALUES(%s,%s,%s)',(oid,status,'Updated by admin'))(oid,status,'Updated by admin')); c.commit(); c.close(); return redirect('/admin')
 
 
 @app.route('/admin/order/<int:oid>/forward')
 def forward_order(oid):
     if not role_required('admin'): return redirect('/login')
-    c=db(); c.execute("UPDATE orders SET forwarded=1,status='Processing' WHERE id=? AND status != 'Cancelled'",(oid,)); c.execute('INSERT INTO order_status_history(order_id,status,note) VALUES(?,?,?)',(oid,'Processing','Forwarded to supplier by admin')); c.commit(); c.close(); flash(f'Order #{oid} forwarded to supplier.','ok'); return redirect('/admin')
+    c=db(); c.execute("UPDATE orders SET forwarded=1,status='Processing' WHERE id=? AND status != 'Cancelled'",(oid,)); c.execute('INSERT INTO order_status_history(order_id,status,note) VALUES(%s,%s,%s)',(oid,'Processing','Forwarded to supplier by admin')); c.commit(); c.close(); flash(f'Order #{oid} forwarded to supplier.','ok'); return redirect('/admin')
 
 
 @app.route('/admin/coupon',methods=['POST'])
