@@ -636,12 +636,12 @@ def return_order(oid):
             (oid,)
         )
 
-        c.execute(
-            '''
-            INSERT INTO order_status_history
-            (order_id,status,note)
-            VALUES(?,?,?)
-            ''',
+       c.execute(
+    '''
+    INSERT INTO order_status_history
+    (order_id,status,note)
+    VALUES(%s,%s,%s)
+    ''',
             (
                 oid,
                 'Return Requested',
@@ -980,7 +980,7 @@ def add_coupon():
     if not role_required('admin'): return redirect('/login')
     code=request.form['code'].strip().upper(); pct=max(0,min(100,float(request.form['discount_percent']))); c=db()
     try: c.execute('INSERT INTO coupons(code,discount_percent,active) VALUES(?,?,1)',(code,pct)); c.commit(); flash('Coupon created.','ok')
-    except sqlite3.IntegrityError: flash('Coupon already exists.','err')
+    except psycopg.errors.UniqueViolation: flash('Coupon already exists.','err')
     finally: c.close()
     return redirect('/admin')
 
