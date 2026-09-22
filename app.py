@@ -247,7 +247,7 @@ def register():
         approved=1 if role=='customer' else 0
         c=db()
         try:
-            c.execute('INSERT INTO users(name,email,password,role,approved) VALUES(?,?,?,?,?)',(f['name'].strip(),f['email'].strip().lower(),generate_password_hash(f['password']),role,approved)); c.commit()
+            c.execute('INSERT INTO users(name,email,password,role,approved) VALUES(%s,%s,%s,%s,%s)'',(f['name'].strip(),f['email'].strip().lower(),generate_password_hash(f['password']),role,approved)); c.commit()
             flash('Supplier account is awaiting admin approval.' if role=='supplier' else 'Account created. Please login.','ok'); return redirect('/login')
         except sqlite3.IntegrityError: flash('Email already registered.','err')
         finally: c.close()
