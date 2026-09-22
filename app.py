@@ -25,92 +25,124 @@ def db():
 
 
 def add_column(c, table, column, definition):
-    cols=[r['name'] for r in c.execute(f'PRAGMA table_info({table})').fetchall()]
+    cols = [
+        r['column_name']
+        for r in c.execute("""
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = %s
+        """, (table,)).fetchall()
+    ]
+
     if column not in cols:
-        c.execute(f'ALTER TABLE {table} ADD COLUMN {column} {definition}')
+        c.execute(
+            f"ALTER TABLE {table} ADD COLUMN {column} {definition}"
+        )
 
 
 def init_db():
     c = db()
-    c.executescript('''
-    CREATE TABLE IF NOT EXISTS users(
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      name TEXT NOT NULL,
-      email TEXT UNIQUE NOT NULL,
-      password TEXT NOT NULL,
-      role TEXT NOT NULL DEFAULT 'customer',
-      approved INTEGER DEFAULT 1,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS products(
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      supplier_id INTEGER NOT NULL,
-      name TEXT NOT NULL,
-      category TEXT NOT NULL,
-      description TEXT,
-      supplier_price REAL NOT NULL,
-      selling_price REAL NOT NULL,
-      stock INTEGER DEFAULT 0,
-      image_url TEXT,
-      approved INTEGER DEFAULT 0,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS orders(
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      customer_id INTEGER NOT NULL,
-      total REAL NOT NULL,
-      supplier_cost REAL NOT NULL,
-      margin REAL NOT NULL,
-      status TEXT DEFAULT 'Pending',
-      address TEXT NOT NULL,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS order_items(
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      order_id INTEGER NOT NULL,
-      product_id INTEGER NOT NULL,
-      supplier_id INTEGER NOT NULL,
-      qty INTEGER NOT NULL,
-      price REAL NOT NULL
-    );
-    CREATE TABLE IF NOT EXISTS addresses(
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      customer_id INTEGER NOT NULL,
-      label TEXT DEFAULT 'Home',
-      recipient TEXT NOT NULL,
-      phone TEXT,
-      address TEXT NOT NULL,
-      city TEXT,
-      state TEXT,
-      pincode TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE TABLE IF NOT EXISTS reviews(
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      product_id INTEGER NOT NULL,
-      customer_id INTEGER NOT NULL,
-      rating INTEGER NOT NULL,
-      comment TEXT,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE(product_id, customer_id)
-    );
-    CREATE TABLE IF NOT EXISTS wishlists(
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      customer_id INTEGER NOT NULL,
-      product_id INTEGER NOT NULL,
-      UNIQUE(customer_id, product_id)
-    );
-    CREATE TABLE IF NOT EXISTS coupons(
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      code TEXT UNIQUE NOT NULL,
-      discount_percent REAL DEFAULT 0,
-      active INTEGER DEFAULT 1
-    );
-    ''')
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS users(
+            id SERIAL PRIMARY KEY,
+            name TEXT NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            role TEXT NOT NULL DEFAULT 'customer',
+            approved INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS products(
+            id SERIAL PRIMARY KEY,
+            supplier_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            category TEXT NOT NULL,
+            description TEXT,
+            supplier_price DOUBLE PRECISION NOT NULL,
+            selling_price DOUBLE PRECISION NOT NULL,
+            stock INTEGER DEFAULT 0,
+            image_url TEXT,
+            approved INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS orders(
+            id SERIAL PRIMARY KEY,
+            customer_id INTEGER NOT NULL,
+            total DOUBLE PRECISION NOT NULL,
+            supplier_cost DOUBLE PRECISION NOT NULL,
+            margin DOUBLE PRECISION NOT NULL,
+            status TEXT DEFAULT 'Pending',
+            address TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS order_items(
+            id SERIAL PRIMARY KEY,
+            order_id INTEGER NOT NULL,
+            product_id INTEGER NOT NULL,
+            supplier_id INTEGER NOT NULL,
+            qty INTEGER NOT NULL,
+            price DOUBLE PRECISION NOT NULL
+        )
+    """)
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS addresses(
+            id SERIAL PRIMARY KEY,
+            customer_id INTEGER NOT NULL,
+            label TEXT DEFAULT 'Home',
+            recipient TEXT NOT NULL,
+            phone TEXT,
+            address TEXT NOT NULL,
+            city TEXT,
+            state TEXT,
+            pincode TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS reviews(
+            id SERIAL PRIMARY KEY,
+            product_id INTEGER NOT NULL,
+            customer_id INTEGER NOT NULL,
+            rating INTEGER NOT NULL,
+            comment TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(product_id, customer_id)
+        )
+    """)
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS wishlists(
+            id SERIAL PRIMARY KEY,
+            customer_id INTEGER NOT NULL,
+            product_id INTEGER NOT NULL,
+            UNIQUE(customer_id, product_id)
+        )
+    """)
+
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS coupons(
+            id SERIAL PRIMARY KEY,
+            code TEXT UNIQUE NOT NULL,
+            discount_percent DOUBLE PRECISION DEFAULT 0,
+            active INTEGER DEFAULT 1
+        )
+    """)
 
     add_column(c, 'orders', 'forwarded', 'INTEGER DEFAULT 0')
     add_column(c, 'orders', 'coupon_code', 'TEXT')
-    add_column(c, 'orders', 'discount', 'REAL DEFAULT 0')
+    add_column(c, 'orders', 'discount', 'DOUBLE PRECISION DEFAULT 0')
     add_column(c, 'orders', 'shipping_partner', 'TEXT')
     add_column(c, 'orders', 'tracking_number', 'TEXT')
     add_column(c, 'orders', 'payment_method', "TEXT DEFAULT 'COD'")
@@ -118,22 +150,26 @@ def init_db():
 
     c.execute("""
         CREATE TABLE IF NOT EXISTS order_status_history(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             order_id INTEGER NOT NULL,
             status TEXT NOT NULL,
             note TEXT,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
 
     admin = c.execute(
-        "SELECT id FROM users WHERE email=?",
+        "SELECT id FROM users WHERE email=%s",
         ("admin@ShoppingBazarHub.in",)
     ).fetchone()
 
     if admin:
         c.execute(
-            "UPDATE users SET password=?, role=?, approved=1 WHERE email=?",
+            """
+            UPDATE users
+            SET password=%s, role=%s, approved=1
+            WHERE email=%s
+            """,
             (
                 generate_password_hash("Admin@123"),
                 "admin",
@@ -142,7 +178,11 @@ def init_db():
         )
     else:
         c.execute(
-            "INSERT INTO users(name,email,password,role,approved) VALUES(?,?,?,?,?)",
+            """
+            INSERT INTO users
+            (name, email, password, role, approved)
+            VALUES (%s, %s, %s, %s, %s)
+            """,
             (
                 "ShoppingBazarHub Admin",
                 "admin@ShoppingBazarHub.in",
@@ -152,11 +192,19 @@ def init_db():
             )
         )
 
-    if not c.execute(
-        "SELECT id FROM coupons WHERE code='WELCOME10'"
-    ).fetchone():
+    coupon = c.execute(
+        "SELECT id FROM coupons WHERE code=%s",
+        ("WELCOME10",)
+    ).fetchone()
+
+    if not coupon:
         c.execute(
-            "INSERT INTO coupons(code,discount_percent,active) VALUES('WELCOME10',10,1)"
+            """
+            INSERT INTO coupons
+            (code, discount_percent, active)
+            VALUES (%s, %s, %s)
+            """,
+            ("WELCOME10", 10, 1)
         )
 
     c.commit()
