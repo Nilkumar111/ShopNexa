@@ -602,7 +602,7 @@ def reject_return(oid):
             """
             INSERT INTO order_status_history
             (order_id,status,note)
-            VALUES(?,?,?)
+            VALUES(%s,%s,%s)
             """,
             (
                 oid,
