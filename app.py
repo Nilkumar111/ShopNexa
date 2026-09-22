@@ -1,5 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
-import sqlite3, os
+import os
+import psycopg
+from psycopg.rows import dict_row
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from datetime import datetime
@@ -16,10 +18,10 @@ STATUSES = ('Pending','Processing','Shipped','Delivered','Cancelled')
 
 
 def db():
-    c=sqlite3.connect(DB)
-    c.row_factory=sqlite3.Row
-    c.execute('PRAGMA foreign_keys=ON')
-    return c
+    return psycopg.connect(
+        os.environ["DATABASE_URL"],
+        row_factory=dict_row
+    )
 
 
 def add_column(c, table, column, definition):
