@@ -280,7 +280,7 @@ def account():
 @app.route('/account/address',methods=['POST'])
 def add_address():
     if not role_required('customer'): return redirect('/login')
-    f=request.form; c=db(); c.execute('INSERT INTO addresses(customer_id,label,recipient,phone,address,city,state,pincode) VALUES(?,?,?,?,?,?,?,?)',(current_user()['id'],f.get('label','Home'),f['recipient'],f.get('phone',''),f['address'],f.get('city',''),f.get('state',''),f.get('pincode',''))); c.commit(); c.close(); flash('Address saved.','ok'); return redirect('/account')
+    f=request.form; c=db(); c.execute('INSERT INTO addresses(customer_id,label,recipient,phone,address,city,state,pincode) VALUES(%s,%s,%s,%s,%s,%s,%s,%s)',(current_user()['id'],f.get('label','Home'),f['recipient'],f.get('phone',''),f['address'],f.get('city',''),f.get('state',''),f.get('pincode',''))); c.commit(); c.close(); flash('Address saved.','ok'); return redirect('/account')
 
 
 @app.route('/account/address/<int:aid>/delete')
