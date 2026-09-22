@@ -398,7 +398,42 @@ def checkout():
             else: flash('Invalid coupon code.','err'); coupon=''
         total=round(subtotal-discount,2); cost=sum(p['supplier_price']*qty for p,qty in items); margin=round(total-cost,2)
         pay_status='Pending' if payment_method=='COD' else 'Demo Paid'
-        c=db(); cur=c.execute('INSERT INTO orders(customer_id,total,supplier_cost,margin,status,address,forwarded,coupon_code,discount,payment_method,payment_status) VALUES(?,?,?,?,?,?,?,?,?,?,?)',(current_user()['id'],total,cost,margin,'Pending',address,0,coupon or None,discount,payment_method,pay_status)); oid=cur.lastrowid
+       c = db()
+
+cur = c.execute(
+    """
+    INSERT INTO orders(
+        customer_id,
+        total,
+        supplier_cost,
+        margin,
+        status,
+        address,
+        forwarded,
+        coupon_code,
+        discount,
+        payment_method,
+        payment_status
+    )
+    VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+    RETURNING id
+    """,
+    (
+        current_user()['id'],
+        total,
+        cost,
+        margin,
+        'Pending',
+        address,
+        0,
+        coupon or None,
+        discount,
+        payment_method,
+        pay_status
+    )
+)
+
+oid = cur.fetchone()['id']
         for p,qty in items:
             c.execute('INSERT INTO order_items(order_id,product_id,supplier_id,qty,price) VALUES(?,?,?,?,?)',(oid,p['id'],p['supplier_id'],qty,p['selling_price']))
             c.execute('UPDATE products SET stock=stock-? WHERE id=? AND stock>=?',(qty,p['id'],qty))
