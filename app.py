@@ -320,7 +320,7 @@ def toggle_wishlist(pid):
     if not role_required('customer'): return redirect('/login')
     c=db(); row=c.execute('SELECT id FROM wishlists WHERE customer_id=? AND product_id=?',(current_user()['id'],pid)).fetchone()
     if row: c.execute('DELETE FROM wishlists WHERE id=?',(row['id'],)); flash('Removed from wishlist.','ok')
-    else: c.execute('INSERT OR IGNORE INTO wishlists(customer_id,product_id) VALUES(?,?)',(current_user()['id'],pid)); flash('Added to wishlist.','ok')
+    else: c.execute('INSERT INTO wishlists(customer_id,product_id) VALUES(%s,%s) ON CONFLICT (customer_id,product_id) DO NOTHING',(current_user()['id'],pid)); flash('Added to wishlist.','ok')
     c.commit(); c.close(); return redirect(request.referrer or '/')
 
 
