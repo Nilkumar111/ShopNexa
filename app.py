@@ -979,7 +979,7 @@ def forward_order(oid):
 def add_coupon():
     if not role_required('admin'): return redirect('/login')
     code=request.form['code'].strip().upper(); pct=max(0,min(100,float(request.form['discount_percent']))); c=db()
-    try: c.execute('INSERT INTO coupons(code,discount_percent,active) VALUES(?,?,1)',(code,pct)); c.commit(); flash('Coupon created.','ok')
+    try: c.execute('INSERT INTO coupons(code,discount_percent,active) VALUES(%s,%s,1)',(code,pct)); c.commit(); flash('Coupon created.','ok')
     except psycopg.errors.UniqueViolation: flash('Coupon already exists.','err')
     finally: c.close()
     return redirect('/admin')
