@@ -410,7 +410,7 @@ def checkout():
             else: flash('Invalid coupon code.','err'); coupon=''
         total=round(subtotal-discount,2); cost=sum(p['supplier_price']*qty for p,qty in items); margin=round(total-cost,2)
         pay_status='Pending' if payment_method=='COD' else 'Demo Paid'
-       c = db()
+        c = db()
 
 cur = c.execute(
     """
