@@ -317,7 +317,7 @@ def review(pid):
     bought=c.execute('SELECT 1 FROM order_items oi JOIN orders o ON o.id=oi.order_id WHERE oi.product_id=%s AND o.customer_id=%s AND o.status != "Cancelled"',(pid,current_user()['id'])).fetchone()
     if not bought: flash('You can review products you have ordered.','err')
     else:
-        c.execute('INSERT INTO reviews(product_id,customer_id,rating,comment) VALUES(%s,%s,%s,%s)' ON CONFLICT(product_id,customer_id) DO UPDATE SET rating=excluded.rating,comment=excluded.comment',(pid,current_user()['id'],rating,comment)); c.commit(); flash('Review saved.','ok')
+        c.execute('INSERT INTO reviews(product_id,customer_id,rating,comment) VALUES(%s,%s,%s,%s) ON CONFLICT(product_id,customer_id) DO UPDATE SET rating=EXCLUDED.rating, comment=EXCLUDED.comment',(pid,current_user()['id'],rating,comment)); c.commit(); flash('Review saved.','ok')
     c.close(); return redirect(f'/product/{pid}')
 
 
