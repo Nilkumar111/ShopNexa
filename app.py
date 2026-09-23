@@ -246,8 +246,8 @@ def register():
         if role not in ('customer','supplier'): role='customer'
         approved=1 if role=='customer' else 0
         c=db()
-        try:
-                    c.execute(
+           try:
+        c.execute(
             'INSERT INTO users(name,email,password,role,approved) VALUES(%s,%s,%s,%s,%s)',
             (
                 f['name'].strip(),
@@ -257,9 +257,12 @@ def register():
                 approved
             )
         )
-            flash('Supplier account is awaiting admin approval.' if role=='supplier' else 'Account created. Please login.','ok'); return redirect('/login')
-        except psycopg.errors.UniqueViolation: flash('Email already registered.','err')
-        finally: c.close()
+        flash('Supplier account is awaiting admin approval.' if role=='supplier' else 'Account created. Please login.','ok')
+        return redirect('/login')
+    except psycopg.errors.UniqueViolation:
+        flash('Email already registered.','err')
+    finally:
+        c.close()
     return render_template('register.html')
 
 
